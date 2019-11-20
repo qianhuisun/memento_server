@@ -49,10 +49,9 @@ class Server(object):
                     data = conn.recv(40960000)
                     if data:
                         print("Got image")
-                        imageFile = open("received.png", 'wb')
+                        imageFile = open("receive/received.png", 'wb')
                         imageFile.write(data)
                         imageFile.close()
-                        # TODO
                         conn.send("GOT IMAGE".encode())
                         conn.shutdown(SHUT_WR) # instead of shutting down connection immediately, get the names with the help of Kairos and send them back
                 elif request.startswith('CLOSE'):
