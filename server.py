@@ -19,14 +19,6 @@ class Server(object):
         start_new_thread(self.phoneServerThread)
 
 
-    def glassConnectionThread(self, conn):
-        # TODO
-
-
-    def phoneConnectionThread(self, conn):
-        # TODO
-
-
     def glassServerThread(self):
         try:
             self.galssServerSocket.bind(('localhost', self.glassPort))
