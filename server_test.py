@@ -5,6 +5,7 @@ from select import *
 import threading
 import _thread
 
+
 class Server(object):
 
     def __init__(self):
@@ -27,43 +28,68 @@ class Server(object):
     def startGlassServer(self):
         print("startGlassServer:")
         
+        self.glassServerSocket.setblocking(0)
         self.glassServerSocket.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
-        self.glassServerSocket.bind(('localhost', self.glassPort))
+        self.glassServerSocket.bind((gethostname(), self.glassPort))
         print("GlassServerSocket binded to port: ", self.glassPort)
-        self.glassServerSocket.listen(1)
+        self.glassServerSocket.listen(5)
         print("GlassServerSocket is listening")
 
-        while True:
-            
-            conn, addr = self.glassServerSocket.accept()
+        inputs = [self.glassServerSocket]
+
+        while inputs:
+
+            if len(inputs) == 1:
+
+                status = input("listen to next client? (Y/N)")
+
+                if status == "n" or status == "N":
+                    break
                 
-            try:
-                print("handleGlassConnection:")
-                data = conn.recv(4096)
-                request = data.decode()
-                if request.startswith('SIZE'):
-                    strings = request.split()
-                    size = int(strings[1])
-                    print("Got size: " + str(size))
-                    conn.send("GOT SIZE".encode())
-                    data = conn.recv(40960000)
-                    if data:
-                        print("Got image")
-                        imageFile = open("received.png", 'wb')
-                        imageFile.write(data)
-                        imageFile.close()
-                        # TODO
-                        conn.send("GOT IMAGE".encode())
-                        conn.shutdown(SHUT_WR) # instead of shutting down connection immediately, get the names with the help of Kairos and send them back
-                elif request.startswith('CLOSE'):
-                    print("Got close")
-                    conn.shutdown(SHUT_WR)
-            except:
-                conn.shutdown(SHUT_WR)
-                continue
+                if status != "y" and status != "Y":
+                    continue
+                
+            readable, writable, exceptional = select(inputs, [], inputs)
+
+            for s in exceptional:
+                inputs.remove(s)
+                s.close()
+            
+            for s in readable:
+                if s is self.glassServerSocket:
+                    conn, addr = s.accept()
+                    conn.setblocking(0)
+                    inputs.append(conn)
+                else:
+                    inputs.remove(s)
+                    s.setblocking(1)
+                    try:
+                        data = s.recv(512)
+                        request = data.decode()
+                        if request.startswith('SIZE'):
+                            strings = request.split()
+                            size = int(strings[1])
+                            print("Got size: " + str(size))
+                            conn.sendall("GOT SIZE".encode())
+                        data = b''
+                        while True:
+                            chunk = s.recv(512)
+                            print("chunk size = " + str(len(chunk)))
+                            data += chunk
+                            if len(chunk) < 512:
+                                break
+                        if data:
+                            print("Got image")
+                            imageFile = open("received.jpg", 'wb')
+                            imageFile.write(data)
+                            imageFile.close()
+                            conn.sendall("GOT IMAGE".encode())
+                        s.close()
+                    except Exception as e:
+                        print(e)
+                        s.close()
 
         self.glassServerSocket.close()
-
 
     def startPhoneServer(self):
         print("startPhoneServer:")
