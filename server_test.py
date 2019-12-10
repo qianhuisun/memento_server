@@ -30,7 +30,8 @@ class Server(object):
         
         self.glassServerSocket.setblocking(0)
         self.glassServerSocket.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
-        self.glassServerSocket.bind((gethostname(), self.glassPort))
+        self.glassServerSocket.bind(("localhost", self.glassPort))
+        #self.glassServerSocket.bind((gethostname(), self.glassPort))
         print("GlassServerSocket binded to port: ", self.glassPort)
         self.glassServerSocket.listen(5)
         print("GlassServerSocket is listening")
@@ -64,24 +65,21 @@ class Server(object):
                     inputs.remove(s)
                     s.setblocking(1)
                     try:
-                        data = s.recv(512)
+                        data = s.recv(1024)
                         request = data.decode()
                         if request.startswith('SIZE'):
                             strings = request.split()
                             size = int(strings[1])
                             print("Got size: " + str(size))
                             conn.sendall("GOT SIZE".encode())
-                        data = b''
-                        while True:
-                            chunk = s.recv(512)
-                            print("chunk size = " + str(len(chunk)))
-                            data += chunk
-                            if len(chunk) < 512:
-                                break
-                        if data:
-                            print("Got image")
+
                             imageFile = open("received.jpg", 'wb')
-                            imageFile.write(data)
+                            received_size = 0
+                            while received_size != size:
+                                data = s.recv(1024)
+                                imageFile.write(data)
+                                received_size += len(data)
+                            print("Got image")
                             imageFile.close()
                             conn.sendall("GOT IMAGE".encode())
                         s.close()
