@@ -3,8 +3,8 @@ import os
 
 glassClientSocket = socket(AF_INET, SOCK_STREAM)
 glassPort = 8088
-glassClientSocket.connect(('localhost', glassPort))
-#glassClientSocket.connect(('3.134.84.232', glassPort))
+#glassClientSocket.connect(('localhost', glassPort))
+glassClientSocket.connect(('3.134.84.232', glassPort))
 
 try:
     size = os.stat("sample.jpg").st_size
